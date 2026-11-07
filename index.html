@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>Story Bot Studio — status</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0d1020">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Story Bot">
+
+<style>
+  :root { --bg:#0b0f1e; --card:#141a2f; --card2:#0f1426; --line:#242c4a; --text:#e9edff;
+          --muted:#909abf; --accent:#6d8dff; --ok:#3ddc97; --warn:#ffcc66; --bad:#ff7b7b;
+          --ok-bg:rgba(61,220,151,.14); --warn-bg:rgba(255,204,102,.14); --bad-bg:rgba(255,123,123,.14);
+          --chip:#232c52; --chip-text:#bccbff; --shadow:0 1px 2px rgba(0,0,0,.25); }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f3f5fb; --card:#ffffff; --card2:#f4f6fc; --line:#dfe4f2; --text:#151a2d;
+            --muted:#5d6788; --accent:#3d5bd9; --ok:#0f8a56; --warn:#9a6700; --bad:#c62f2f;
+            --ok-bg:#dff5ea; --warn-bg:#fdf0d0; --bad-bg:#fde3e3;
+            --chip:#e7ebfa; --chip-text:#33427d; --shadow:0 1px 3px rgba(20,30,70,.08); }
+  }
+  * { box-sizing:border-box }
+  html { -webkit-text-size-adjust:100% }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:15px/1.5 -apple-system,"Segoe UI",Roboto,system-ui,sans-serif; }
+  a { color:var(--accent); text-decoration:none } a:hover { text-decoration:underline }
+  .wrap { max-width:1120px; margin:0 auto; padding:0 16px }
+  .top { position:sticky; top:0; z-index:5; background:color-mix(in srgb, var(--bg) 88%, transparent);
+         backdrop-filter:blur(10px); border-bottom:1px solid var(--line) }
+  .top .wrap { display:flex; align-items:center; justify-content:space-between; gap:8px 16px;
+               flex-wrap:wrap; padding-top:12px; padding-bottom:12px }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:18px }
+  .brand i { width:28px; height:28px; border-radius:9px; flex:0 0 auto;
+             background:linear-gradient(135deg,#6d8dff,#b07cff) }
+  .top-meta { color:var(--muted); font-size:13px; display:flex; gap:4px 14px; flex-wrap:wrap }
+  .top-meta b { color:var(--text); font-weight:600 }
+  main.wrap { padding-top:16px; padding-bottom:8px }
+  h2 { font-size:13px; margin:0 0 12px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em }
+  h2 small { text-transform:none; letter-spacing:0; font-weight:400 }
+  h2.section { margin:22px 0 10px }
+  h3 { font-size:17px; margin:0; line-height:1.25 }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px;
+          box-shadow:var(--shadow); min-width:0 }
+  .muted { color:var(--muted); font-size:13px }
+  .eyebrow { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.07em }
+  .empty { color:var(--muted); font-size:14px; padding:6px 0 }
+
+  /* Its inline display:flex would otherwise show the bar even while hidden. */
+  #install-bar[hidden] { display:none !important }
+  #install-bar { max-width:none !important; margin:0 0 14px !important; background:var(--card) !important;
+                 border-color:var(--accent) !important; border-radius:14px !important }
+
+  .banner { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+            background:var(--card); border:1px solid var(--line); border-left:4px solid var(--ok);
+            border-radius:14px; padding:14px 16px; margin-bottom:14px }
+  .banner.warn { border-left-color:var(--warn) } .banner.bad { border-left-color:var(--bad) }
+  .banner-line { margin-top:2px }
+  .btn { display:inline-block; padding:8px 14px; border-radius:10px; border:1px solid var(--line);
+         background:var(--card2); color:var(--text); font-weight:600; font-size:13px; white-space:nowrap }
+  .btn:hover { text-decoration:none; border-color:var(--accent) }
+
+  .kpis { display:grid; gap:12px; grid-template-columns:repeat(2,minmax(0,1fr)) }
+  .kpi { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px 16px;
+         box-shadow:var(--shadow) }
+  .kpi .num { font-size:34px; font-weight:700; line-height:1.1; margin:4px 0 2px;
+              font-variant-numeric:tabular-nums }
+  .kpi.ok .num { color:var(--ok) } .kpi.warn .num { color:var(--warn) } .kpi.bad .num { color:var(--bad) }
+
+  .grid { display:grid; gap:14px; grid-template-columns:1fr }
+  .channel { display:flex; flex-direction:column; gap:12px }
+  .channel-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap }
+  .plats { display:flex; gap:6px; flex-wrap:wrap }
+  .plat { font-size:11px; font-weight:600; padding:2px 8px; border-radius:99px;
+          border:1px solid var(--line); color:var(--muted) }
+  .plat.on { background:var(--ok-bg); border-color:transparent; color:var(--ok) }
+  .acct-top { display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:6px }
+  .acct-name { color:var(--muted); font-size:13px }
+  .acct-count { font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--text) }
+  .acct-count small { font-size:13px; font-weight:500; color:var(--muted) }
+  .acct-count.full { color:var(--warn) }
+  .bar { height:8px; background:var(--card2); border-radius:99px; overflow:hidden }
+  .bar i { display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#5b7bff,#9a7dff) }
+  .facts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:0 }
+  .facts dt { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.05em }
+  .facts dd { margin:0; font-size:13px; font-weight:600; overflow-wrap:anywhere }
+  .last { background:var(--card2); border-radius:12px; padding:10px 12px; margin-top:auto }
+  .last-top { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap }
+  .last-title { font-size:14px; font-weight:600; margin-top:4px; overflow-wrap:anywhere;
+                display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden }
+  .last.bad b { color:var(--bad) }
+  .reason { color:var(--muted); font-size:12px; margin-top:4px; overflow-wrap:anywhere }
+
+  .pill { display:inline-block; font-size:12px; font-weight:600; padding:2px 9px; border-radius:99px;
+          background:var(--chip); color:var(--chip-text) }
+  .pill.ok { background:var(--ok-bg); color:var(--ok) } .pill.warn { background:var(--warn-bg); color:var(--warn) }
+  .pill.bad { background:var(--bad-bg); color:var(--bad) }
+  .plat-line { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px }
+  .chip { background:var(--chip); color:var(--chip-text); border-radius:99px; padding:1px 9px; font-size:12px }
+  .meta { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:6px }
+
+  .cols { display:grid; gap:14px; grid-template-columns:1fr; margin-top:14px }
+  .stack { display:grid; gap:14px; margin-top:14px }
+  .rows { list-style:none; margin:0; padding:0 }
+  .row { display:flex; flex-direction:column; gap:8px; padding:12px 0; border-top:1px solid var(--line) }
+  .row:first-child { border-top:0; padding-top:0 } .row:last-child { padding-bottom:0 }
+  .row-main { min-width:0 } .row-title { font-weight:600; font-size:14px; overflow-wrap:anywhere }
+  .row-side { display:flex; align-items:center; gap:10px; flex-wrap:wrap }
+  .when { color:var(--muted); font-size:13px; white-space:nowrap }
+  .url { display:block; margin-top:6px; font-size:12px; overflow-wrap:anywhere }
+  .alert { border-left:4px solid var(--bad); margin-top:14px }
+  .row.with-thumb { flex-direction:row; align-items:flex-start; gap:12px }
+  .rthumb { width:128px; aspect-ratio:16/9; object-fit:cover; border-radius:8px; flex:none; background:var(--line) }
+  .rthumb.none { display:grid; place-items:center; font-size:11px; color:var(--muted) }
+  .with-thumb .row-main { flex:1 } .with-thumb .row-side { margin-top:6px }
+  .tls { display:grid; gap:6px; margin-top:8px }
+  .tl { font-size:12px } .tl-name { font-weight:700; margin-bottom:2px }
+  .tl-step { color:var(--muted); display:flex; gap:6px; align-items:baseline; flex-wrap:wrap }
+  .tl-step b { color:var(--text, inherit) }
+  .tl-step i { width:7px; height:7px; border-radius:50%; flex:none; display:inline-block }
+  .tl-step.done i { background:var(--ok) } .tl-step.wait i { background:var(--warn) }
+  .tl-step.fail i { background:var(--bad) }
+  @media (max-width:520px) { .rthumb { width:96px } }
+
+  .tbl { overflow-x:auto; margin:0 -16px; padding:0 16px }
+  table { width:100%; border-collapse:collapse; font-size:14px }
+  td, th { padding:8px 8px; border-top:1px solid var(--line); text-align:center; white-space:nowrap;
+           font-variant-numeric:tabular-nums }
+  thead th { border-top:0; color:var(--muted); font-size:12px; font-weight:600 }
+  tbody th { text-align:left; font-weight:500; color:var(--muted) }
+  thead th:first-child { text-align:left }
+  .heat { display:inline-block; min-width:30px; padding:2px 6px; border-radius:8px;
+          background:color-mix(in srgb, var(--accent) calc(var(--a) * 45%), transparent) }
+  td.total { font-weight:700 }
+
+  .vids { display:grid; gap:10px; grid-template-columns:1fr }
+  .vid { display:flex; gap:12px; padding:8px; border-radius:12px; color:inherit; min-width:0 }
+  .vid:hover { background:var(--card2); text-decoration:none }
+  .vid img, .noimg { width:128px; aspect-ratio:16/9; object-fit:cover; border-radius:10px;
+                     background:var(--card2); flex:0 0 auto }
+  .vid-body { min-width:0 }
+  .vid-title { font-size:14px; font-weight:600; overflow-wrap:anywhere;
+               display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden }
+  footer.wrap { color:var(--muted); font-size:13px; padding-top:22px; padding-bottom:28px }
+
+  @media (min-width:640px) {
+    .grid { grid-template-columns:repeat(2,minmax(0,1fr)) }
+    .vids { grid-template-columns:repeat(2,minmax(0,1fr)) }
+    .row { flex-direction:row; justify-content:space-between; align-items:flex-start; gap:16px }
+    .row-side { flex-direction:column; align-items:flex-end; gap:4px; flex:0 0 auto; text-align:right }
+  }
+  @media (min-width:900px) {
+    body { font-size:16px }
+    .kpis { grid-template-columns:repeat(4,minmax(0,1fr)) }
+    .grid { grid-template-columns:repeat(3,minmax(0,1fr)) }
+    .cols { grid-template-columns:minmax(0,3fr) minmax(0,2fr); align-items:start }
+    .vids { grid-template-columns:repeat(3,minmax(0,1fr)) }
+    .vid { flex-direction:column; gap:8px } .vid img, .noimg { width:100% }
+  }
+</style></head><body>
+<header class="top"><div class="wrap">
+  <div class="brand"><i></i>Story Bot Studio</div>
+  <div class="top-meta"><span>Updated <b>07 Nov 2026, 10:18 PM PKT</b></span><span>Next run <b>07 Nov, 11:30 PM</b></span></div>
+</div></header>
+
+<main class="wrap">
+  
+<div id="install-bar" hidden style="max-width:900px;margin:0 auto 14px;padding:12px 14px;border-radius:12px;
+  background:#16224a;border:1px solid #2c3d78;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+  <span id="install-text">📲 Install Story Bot as an app on this phone</span>
+  <button id="install-btn" style="background:#4f7dff;color:#fff;border:0;border-radius:10px;padding:9px 14px;font-weight:600">Install</button>
+</div>
+<script>
+(function () {
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+  var bar = document.getElementById('install-bar'), btn = document.getElementById('install-btn'), prompt = null;
+  var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if (standalone) return;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); prompt = e; bar.hidden = false;
+  });
+  btn.addEventListener('click', function () {
+    if (!prompt) return;
+    prompt.prompt(); prompt.userChoice.finally(function () { bar.hidden = true; prompt = null; });
+  });
+  if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
+    document.getElementById('install-text').textContent = '📲 iPhone: tap Share, then “Add to Home Screen”';
+    btn.hidden = true; bar.hidden = false;
+  }
+})();
+</script>
+
+  
+    <section class="banner ok">
+      <div><div class="eyebrow">Last run</div>
+      <div class="banner-line"><b>1 video built</b> · 07 Nov, 08:25 PM PKT, on GitHub</div></div>
+      <a class='btn' href='https://github.com/joyfuljuniors553-source/story_bot_studio/actions/runs/42376770483' target='_blank' rel='noopener'>Open the run log</a>
+    </section>
+  <section class='kpis'><div class='kpi ok'><div class='eyebrow'>Uploaded today</div><div class='num'>6</div><div class='muted'>since the YouTube quota reset</div></div><div class='kpi '><div class='eyebrow'>Made in 24 hours</div><div class='num'>22</div><div class='muted'>videos built, uploaded or not</div></div><div class='kpi '><div class='eyebrow'>Waiting to upload</div><div class='num'>0</div><div class='muted'>go up when quota allows</div></div><div class='kpi bad'><div class='eyebrow'>Failed in 24 hours</div><div class='num'>1</div><div class='muted'>see the list below</div></div></section>
+
+  <h2 class="section">Channels</h2>
+  <div class="grid">
+    <article class="card channel">
+      <div class="channel-top"><h3>Star Life Stories</h3><div class="plats"><span class='plat on'>YouTube</span><span class='plat on'>Facebook</span><span class='plat on'>TikTok</span></div></div>
+      
+        <div class="acct">
+          <div class="acct-top">
+            <span class="acct-name">Uploaded today</span>
+            <span class="acct-count ok">3 <small>/ 4</small></span>
+          </div>
+          <div class="bar"><i style="width:75%"></i></div>
+        </div>
+      <dl class="facts"><div><dt>Daily at</dt><dd>11:30 AM EST</dd></div><div><dt>Pictures</dt><dd>real video clips</dd></div><div><dt>Waiting</dt><dd>nothing</dd></div></dl>
+      <div class='last'><div class='last-top'><span class='muted'>Latest video · 07 Nov, 10:17 PM</span><span class='pill ok'>Scheduled on YouTube</span></div><div class='last-title'>How Billie Eilish and Finneas Created Ocean Eyes | True Celebrity Story</div><div class='plat-line'><span class='pill warn'>YouTube ⏳ · 08 Nov, 11:30 PM</span><span class='pill bad'>Facebook ✕ · failed</span><span class='pill warn'>TikTok ⏳ · 08 Nov, 11:30 PM</span></div></div>
+    </article>
+    <article class="card channel">
+      <div class="channel-top"><h3>Quasorynth</h3><div class="plats"><span class='plat on'>YouTube</span><span class='plat on'>Facebook</span></div></div>
+      
+        <div class="acct">
+          <div class="acct-top">
+            <span class="acct-name">Uploaded today</span>
+            <span class="acct-count ok">0 <small>/ 4</small></span>
+          </div>
+          <div class="bar"><i style="width:0%"></i></div>
+        </div>
+      <dl class="facts"><div><dt>Daily at</dt><dd>03:30 PM EST</dd></div><div><dt>Pictures</dt><dd>real video clips</dd></div><div><dt>Waiting</dt><dd>nothing</dd></div></dl>
+      <div class='last'><div class='last-top'><span class='muted'>Latest video · 07 Nov, 02:52 AM</span><span class='pill ok'>Scheduled on YouTube</span></div><div class='last-title'>Where Is Everybody In The Fermi Paradox? | Quasorynth</div><div class='plat-line'><span class='pill warn'>YouTube ⏳ · 08 Nov, 03:00 AM</span><span class='pill bad'>Facebook ✕ · failed</span></div></div>
+    </article>
+    <article class="card channel">
+      <div class="channel-top"><h3>Veylora Earth</h3><div class="plats"><span class='plat on'>YouTube</span><span class='plat on'>Facebook</span></div></div>
+      
+        <div class="acct">
+          <div class="acct-top">
+            <span class="acct-name">Uploaded today</span>
+            <span class="acct-count ok">0 <small>/ 4</small></span>
+          </div>
+          <div class="bar"><i style="width:0%"></i></div>
+        </div>
+      <dl class="facts"><div><dt>Daily at</dt><dd>01:30 PM EST</dd></div><div><dt>Pictures</dt><dd>real video clips</dd></div><div><dt>Waiting</dt><dd>nothing</dd></div></dl>
+      <div class='last'><div class='last-top'><span class='muted'>Latest video · 07 Nov, 12:55 AM</span><span class='pill ok'>Scheduled on YouTube</span></div><div class='last-title'>Unveiling the 293 Species of Carnivora Across the Globe | Veylora Earth</div><div class='plat-line'><span class='pill warn'>YouTube ⏳ · 07 Nov, 10:30 PM</span><span class='pill warn'>Facebook ⏳ · 07 Nov, 10:30 PM</span></div></div>
+    </article>
+    <article class="card channel">
+      <div class="channel-top"><h3>DimeHorizon</h3><div class="plats"><span class='plat on'>YouTube</span></div></div>
+      
+        <div class="acct">
+          <div class="acct-top">
+            <span class="acct-name">Uploaded today</span>
+            <span class="acct-count ok">0 <small>/ 4</small></span>
+          </div>
+          <div class="bar"><i style="width:0%"></i></div>
+        </div>
+      <dl class="facts"><div><dt>Daily at</dt><dd>09:30 AM EST</dd></div><div><dt>Pictures</dt><dd>real video clips</dd></div><div><dt>Waiting</dt><dd>nothing</dd></div></dl>
+      <div class='last'><div class='last-top'><span class='muted'>Latest video · 07 Nov, 09:08 PM</span><span class='pill warn'>Uploading</span></div><div class='last-title'>How the Debt Snowball Method Uses Small Wins to Clear Balances | Dime Horizon</div><div class='plat-line'><span class='pill bad'>YouTube ✕ · not uploaded</span></div></div>
+    </article>
+    <article class="card channel">
+      <div class="channel-top"><h3>Abyssoryn</h3><div class="plats"><span class='plat on'>YouTube</span><span class='plat on'>Facebook</span></div></div>
+      
+        <div class="acct">
+          <div class="acct-top">
+            <span class="acct-name">Uploaded today</span>
+            <span class="acct-count ok">3 <small>/ 4</small></span>
+          </div>
+          <div class="bar"><i style="width:75%"></i></div>
+        </div>
+      <dl class="facts"><div><dt>Daily at</dt><dd>07:30 AM EST</dd></div><div><dt>Pictures</dt><dd>real video clips</dd></div><div><dt>Waiting</dt><dd>nothing</dd></div></dl>
+      <div class='last'><div class='last-top'><span class='muted'>Latest video · 07 Nov, 09:38 PM</span><span class='pill ok'>Scheduled on YouTube</span></div><div class='last-title'>Unveiling Ctenophora: The Largest Animals to Swim With Cilia | Abyssoryn</div><div class='plat-line'><span class='pill warn'>YouTube ⏳ · 08 Nov, 04:30 AM</span><span class='pill bad'>Facebook ✕ · failed</span></div></div>
+    </article></div>
+
+  <section class='card'><h2>Competitor topics vs our own <small>last 14 days, updated 2026-11-07 17:18 UTC</small></h2><h3>Star Life Stories <small>our own topics: 12 videos · 1.6 views/day</small></h3><ul class='rows'><li class='row'><div class='row-main'><div class='row-title'>Facts Verse</div><div class='meta'>4 of our videos · 3.2 views/day · 2.05× our own</div></div><span class='pill ok'>Strong: keep</span></li></ul><h3>Quasorynth <small>our own topics: 1 videos · 24.0 views/day</small></h3><ul class='rows'><li class='row'><div class='row-main'><div class='row-title'>Astrum</div><div class='meta'>1 of our videos · 850.0 views/day · 35.42× our own</div></div><span class='pill warn'>Too early</span></li><li class='row'><div class='row-main'><div class='row-title'>Insane Curiosity</div><div class='meta'>2 of our videos · 106.9 views/day · 4.45× our own</div></div><span class='pill ok'>Strong: keep</span></li></ul><h3>Veylora Earth <small>our own topics: 9 videos · 133.6 views/day</small></h3><ul class='rows'><li class='row'><div class='row-main'><div class='row-title'>Ben G Thomas</div><div class='meta'>2 of our videos · 106.5 views/day · 0.8× our own</div></div><span class='pill warn'>Like our own</span></li></ul><h3>DimeHorizon <small>our own topics: 2 videos · 19.5 views/day</small></h3><div class='empty'>No video from a competitor topic yet.</div><h3>Abyssoryn <small>our own topics: 3 videos · 30.6 views/day</small></h3><ul class='rows'><li class='row'><div class='row-main'><div class='row-title'>MBARI (Monterey Bay Aquarium Research Institute)</div><div class='meta'>2 of our videos · 20.4 views/day · 0.67× our own</div></div><span class='pill bad'>Weak: replace</span></li></ul></section>
+  
+    <section class="card alert">
+      <h2>Failed attempts <small>last 3 days</small></h2>
+      <ul class="rows"><li class='row'><div class='row-main'><div class='row-title'>star_life_stories</div><div class='reason'>Script providers failed: Gemini(gemini-flash-lite-latest): HTTP Error 503: Service Unavailable | Gemini(gemini-flash-latest): HTTP Error 429: Too Many Requests | Gemini(gemini-3.8-flash): HTTP Error 429: Too Many Requests | Gemini key 2(gem</div></div><div class='row-side'><span class='muted'>05 Nov, 10:51 PM</span></div></li><li class='row'><div class='row-main'><div class='row-title'>abyssoryn_earth_mysterie</div><div class='reason'>Script providers failed: Gemini(gemini-flash-lite-latest): HTTP Error 503: Service Unavailable | Gemini(gemini-flash-latest): HTTP Error 429: Too Many Requests | Gemini(gemini-3.8-flash): HTTP Error 429: Too Many Requests | Groq: HTTP Error</div></div><div class='row-side'><span class='muted'>05 Nov, 09:13 PM</span></div></li><li class='row'><div class='row-main'><div class='row-title'>abyssoryn_earth_mysterie</div><div class='reason'>Script providers failed: Gemini(gemini-flash-lite-latest): HTTP Error 503: Service Unavailable | Gemini(gemini-flash-latest): HTTP Error 503: Service Unavailable | Gemini(gemini-3.8-flash): HTTP Error 503: Service Unavailable | Pollinations</div></div><div class='row-side'><span class='muted'>05 Nov, 07:02 PM</span></div></li><li class='row'><div class='row-main'><div class='row-title'>dime_horizon</div><div class='reason'>Script providers failed: Gemini(gemini-flash-lite-latest): HTTP Error 429: Too Many Requests | Gemini(gemini-flash-latest): HTTP Error 503: Service Unavailable | Gemini(gemini-3.8-flash): HTTP Error 429: Too Many Requests | Pollinations: HT</div></div><div class='row-side'><span class='muted'>05 Nov, 06:59 AM</span></div></li></ul>
+    </section>
+  
+    <section class="card alert">
+      <h2>Needs a look</h2>
+      <ul class="rows"><li class='row'><div class='row-main'><div class='row-title'>How Inflation Secretly Reduces Your Money&#x27;s Purchasing Power | Dime Horizon</div><div class='meta'><span class='chip'>dime_horizon</span></div><div class='reason'>The video was built but could not be uploaded at the time, and its files were only kept for a week.</div></div></li></ul>
+    </section>
+
+  <div class="cols">
+    <section class="card">
+      <h2>Last 24 hours</h2>
+      <ul class='rows'><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/58.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=WBs3MbD-E-Y' target='_blank' rel='noopener'>How Billie Eilish and Finneas Created Ocean Eyes | True Celebrity Story</a></div><div class='meta'><span class='chip'>star_life_stories</span><span class='chip'>short</span></div><div class='row-side'><span class='pill ok'>Scheduled on YouTube</span><span class='muted'>08 Nov, 11:30 PM</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=WBs3MbD-E-Y' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 10:17 PM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>08 Nov, 11:30 PM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata,
+        pages_read <b>07 Nov, 10:17 PM PKT</b></div></div><div class='tl'><div class='tl-name'>TikTok</div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 10:17 PM PKT</b></div><div class='tl-step wait'><i></i>Goes live <b>08 Nov, 11:30 PM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/57.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=23rHmANTxi4' target='_blank' rel='noopener'>Harry Styles: The Record-Breaking Solo Sales Phenomenon | True Celebrity Story</a></div><div class='meta'><span class='chip'>star_life_stories</span><span class='chip'>short</span></div><div class='row-side'><span class='pill ok'>Scheduled on YouTube</span><span class='muted'>08 Nov, 07:30 PM</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=23rHmANTxi4' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 10:03 PM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>08 Nov, 07:30 PM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata,
+        pages_read <b>07 Nov, 10:03 PM PKT</b></div></div><div class='tl'><div class='tl-name'>TikTok</div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 10:03 PM PKT</b></div><div class='tl-step wait'><i></i>Goes live <b>08 Nov, 07:30 PM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/56.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=WYPGOy5t-cs' target='_blank' rel='noopener'>Dwayne Douglas Johnson and His Journey to Global Prominence | True Celebrity Story</a></div><div class='meta'><span class='chip'>star_life_stories</span><span class='chip'>short</span></div><div class='row-side'><span class='pill ok'>Scheduled on YouTube</span><span class='muted'>08 Nov, 03:30 AM</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=WYPGOy5t-cs' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 09:53 PM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>08 Nov, 03:30 AM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata,
+        pages_read <b>07 Nov, 09:53 PM PKT</b></div></div><div class='tl'><div class='tl-name'>TikTok</div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 09:53 PM PKT</b></div><div class='tl-step wait'><i></i>Goes live <b>08 Nov, 03:30 AM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/55.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=V0G7JOnjMvU' target='_blank' rel='noopener'>Unveiling Ctenophora: The Largest Animals to Swim With Cilia | Abyssoryn</a></div><div class='meta'><span class='chip'>abyssoryn_earth_mysterie</span><span class='chip'>short</span></div><div class='row-side'><span class='pill ok'>Scheduled on YouTube</span><span class='muted'>08 Nov, 04:30 AM</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=V0G7JOnjMvU' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 09:38 PM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>08 Nov, 04:30 AM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata,
+        pages_read <b>07 Nov, 09:38 PM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/54.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=5Xs7vwCT1H8' target='_blank' rel='noopener'>How Deepsea lizardfish Survive the Deep Ocean Floor | Abyssoryn</a></div><div class='meta'><span class='chip'>abyssoryn_earth_mysterie</span><span class='chip'>short</span></div><div class='row-side'><span class='pill ok'>Scheduled on YouTube</span><span class='muted'>08 Nov, 12:30 AM</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=5Xs7vwCT1H8' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 09:25 PM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>08 Nov, 12:30 AM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata,
+        pages_read <b>07 Nov, 09:25 PM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/53.jpg' alt=''><div class='row-main'><div class='row-title'>How the Debt Snowball Method Uses Small Wins to Clear Balances | Dime Horizon</div><div class='meta'><span class='chip'>dime_horizon</span><span class='chip'>short</span></div><div class='reason'>Held: YouTube does not allow custom thumbnails on this channel yet. Verify it at youtube.com/verify, then press &#x27;Thumbnails Are Verified&#x27; on the dashboard</div><div class='row-side'><span class='pill warn'>Uploading</span><span class='muted'>07 Nov, 09:08 PM</span></div><div class='tls'><div class='tl'><div class='tl-name'>YouTube</div><div class='tl-step wait'><i></i>Uploading now (0%)</div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/52.jpg' alt=''><div class='row-main'><div class='row-title'>How Real Estate Wealth and Property Markets Work | Dime Horizon</div><div class='meta'><span class='chip'>dime_horizon</span><span class='chip'>short</span></div><div class='reason'>Held: YouTube does not allow custom thumbnails on this channel yet. Verify it at youtube.com/verify, then press &#x27;Thumbnails Are Verified&#x27; on the dashboard</div><div class='row-side'><span class='pill warn'>Uploading</span><span class='muted'>07 Nov, 08:53 PM</span></div><div class='tls'><div class='tl'><div class='tl-name'>YouTube</div><div class='tl-step wait'><i></i>Uploading now (0%)</div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/51.jpg' alt=''><div class='row-main'><div class='row-title'>FIRE movement Explained | Dime Horizon</div><div class='meta'><span class='chip'>dime_horizon</span><span class='chip'>short</span></div><div class='reason'>Held: YouTube does not allow custom thumbnails on this channel yet. Verify it at youtube.com/verify, then press &#x27;Thumbnails Are Verified&#x27; on the dashboard</div><div class='row-side'><span class='pill warn'>Uploading</span><span class='muted'>07 Nov, 08:41 PM</span></div><div class='tls'><div class='tl'><div class='tl-name'>YouTube</div><div class='tl-step wait'><i></i>Uploading now (0%)</div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/50.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=fSYRfdOC1Ro' target='_blank' rel='noopener'>What Lies Beneath the Distinct Pigmentation of Orcinus orca? | Abyssoryn</a></div><div class='meta'><span class='chip'>abyssoryn_earth_mysterie</span><span class='chip'>long</span></div><div class='row-side'><span class='pill ok'>Scheduled on YouTube</span><span class='muted'>08 Nov, 07:30 AM</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=fSYRfdOC1Ro' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 08:25 PM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>08 Nov, 07:30 AM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: {&quot;error&quot;:{&quot;message&quot;:&quot;Any of the pages_read_engagement, pages_manage_metadata,\n  <b>07 Nov, 08:25 PM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/49.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=zFUFqb0ORmo' target='_blank' rel='noopener'>Where Is Everybody In The Fermi Paradox? | Quasorynth</a></div><div class='meta'><span class='chip'>quasorynth_space</span><span class='chip'>short</span></div><div class='row-side'><span class='pill ok'>Scheduled on YouTube</span><span class='muted'>08 Nov, 03:00 AM</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=zFUFqb0ORmo' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 02:52 AM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>08 Nov, 03:00 AM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata,
+        pages_read <b>07 Nov, 02:53 AM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/48.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=RqUGhES2L4I' target='_blank' rel='noopener'>The Andromeda–Milky Way Collision: Will Our Galaxies Actually Crash? | Quasorynth</a></div><div class='meta'><span class='chip'>quasorynth_space</span><span class='chip'>short</span></div><div class='row-side'><span class='pill ok'>Scheduled on YouTube</span><span class='muted'>07 Nov, 11:00 PM</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=RqUGhES2L4I' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 02:38 AM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>07 Nov, 11:00 PM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: {&quot;error&quot;:{&quot;message&quot;:&quot;Any of the pages_read_engagement, pages_manage_metadata,\n  <b>07 Nov, 02:39 AM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/47.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=lYlPbC24TxM' target='_blank' rel='noopener'>How TON 618 Became One of the Brightest Objects in the Universe | Quasorynth</a></div><div class='meta'><span class='chip'>quasorynth_space</span><span class='chip'>short</span></div><div class='row-side'><span class='pill ok'>Scheduled on YouTube</span><span class='muted'>07 Nov, 07:00 AM</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=lYlPbC24TxM' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 02:26 AM PKT</b></div><div class='tl-step done'><i></i>Public since <b>07 Nov, 07:00 AM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: {&quot;error&quot;:{&quot;message&quot;:&quot;Any of the pages_read_engagement, pages_manage_metadata,\n  <b>07 Nov, 02:27 AM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/46.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=2DlvZvmNyLU' target='_blank' rel='noopener'>Unveiling the 293 Species of Carnivora Across the Globe | Veylora Earth</a></div><div class='meta'><span class='chip'>veylora_earth</span><span class='chip'>short</span></div><div class='row-side'><span class='pill ok'>Scheduled on YouTube</span><span class='muted'>07 Nov, 10:30 PM</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=2DlvZvmNyLU' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 12:55 AM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>07 Nov, 10:30 PM PKT</b></div></div><div class='tl'><div class='tl-name'><a href='https://www.facebook.com/reel/1429553159334773' target='_blank' rel='noopener'>Facebook &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 12:55 AM PKT</b></div><div class='tl-step wait'><i></i>Goes live <b>07 Nov, 10:30 PM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/45.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=2OAgsgNXCcw' target='_blank' rel='noopener'>Otodus megalodon lived approximately 23 to 3.58 million years ago | Veylora Earth</a></div><div class='meta'><span class='chip'>veylora_earth</span><span class='chip'>short</span></div><div class='row-side'><span class='pill ok'>Scheduled on YouTube</span><span class='muted'>07 Nov, 06:30 AM</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=2OAgsgNXCcw' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 12:42 AM PKT</b></div><div class='tl-step done'><i></i>Public since <b>07 Nov, 06:30 AM PKT</b></div></div><div class='tl'><div class='tl-name'><a href='https://www.facebook.com/2244233232822069' target='_blank' rel='noopener'>Facebook &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 12:43 AM PKT</b></div><div class='tl-step done'><i></i>Live since <b>07 Nov, 06:30 AM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/44.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=_ucCVFu8QXU' target='_blank' rel='noopener'>How Did Machairodontinae Evolve Their Iconic Saber Teeth? | Veylora Earth</a></div><div class='meta'><span class='chip'>veylora_earth</span><span class='chip'>short</span></div><div class='row-side'><span class='pill ok'>Scheduled on YouTube</span><span class='muted'>07 Nov, 02:30 AM</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=_ucCVFu8QXU' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 12:29 AM PKT</b></div><div class='tl-step done'><i></i>Public since <b>07 Nov, 02:30 AM PKT</b></div></div><div class='tl'><div class='tl-name'><a href='https://www.facebook.com/reel/1619935362404016' target='_blank' rel='noopener'>Facebook &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 12:29 AM PKT</b></div><div class='tl-step done'><i></i>Live since <b>07 Nov, 02:30 AM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/43.jpg' alt=''><div class='row-main'><div class='row-title'>How Stock Splits and Berkshire Hathaway Impact Share Prices | Dime Horizon</div><div class='meta'><span class='chip'>dime_horizon</span><span class='chip'>short</span></div><div class='reason'>Held: YouTube does not allow custom thumbnails on this channel yet. Verify it at youtube.com/verify, then press &#x27;Thumbnails Are Verified&#x27; on the dashboard</div><div class='row-side'><span class='pill warn'>Uploading</span><span class='muted'>07 Nov, 12:09 AM</span></div><div class='tls'><div class='tl'><div class='tl-name'>YouTube</div><div class='tl-step wait'><i></i>Uploading now (0%)</div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/42.jpg' alt=''><div class='row-main'><div class='row-title'>How Net Worth Quietly Measures Financial Strength | Dime Horizon</div><div class='meta'><span class='chip'>dime_horizon</span><span class='chip'>short</span></div><div class='reason'>Held: YouTube does not allow custom thumbnails on this channel yet. Verify it at youtube.com/verify, then press &#x27;Thumbnails Are Verified&#x27; on the dashboard</div><div class='row-side'><span class='pill warn'>Uploading</span><span class='muted'>06 Nov, 11:55 PM</span></div><div class='tls'><div class='tl'><div class='tl-name'>YouTube</div><div class='tl-step wait'><i></i>Uploading now (0%)</div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/41.jpg' alt=''><div class='row-main'><div class='row-title'>How Digital Access and Economic Opportunity Are Connected | Dime Horizon</div><div class='meta'><span class='chip'>dime_horizon</span><span class='chip'>short</span></div><div class='reason'>Held: YouTube does not allow custom thumbnails on this channel yet. Verify it at youtube.com/verify, then press &#x27;Thumbnails Are Verified&#x27; on the dashboard</div><div class='row-side'><span class='pill warn'>Uploading</span><span class='muted'>06 Nov, 11:39 PM</span></div><div class='tls'><div class='tl'><div class='tl-name'>YouTube</div><div class='tl-step wait'><i></i>Uploading now (0%)</div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/40.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=vSese7PnG_U' target='_blank' rel='noopener'>The Life, Career, and Controversial Death of American Actor George Reeves | True Celebrity Story</a></div><div class='meta'><span class='chip'>star_life_stories</span><span class='chip'>short</span></div><div class='row-side'><span class='pill ok'>Scheduled on YouTube</span><span class='muted'>07 Nov, 11:30 PM</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=vSese7PnG_U' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>06 Nov, 11:04 PM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>07 Nov, 11:30 PM PKT</b></div></div><div class='tl'><div class='tl-name'><a href='https://www.facebook.com/reel/1554736810035441' target='_blank' rel='noopener'>Facebook &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>06 Nov, 11:04 PM PKT</b></div><div class='tl-step wait'><i></i>Goes live <b>07 Nov, 11:30 PM PKT</b></div></div><div class='tl'><div class='tl-name'>TikTok</div><div class='tl-step done'><i></i>Uploaded <b>06 Nov, 11:04 PM PKT</b></div><div class='tl-step wait'><i></i>Goes live <b>07 Nov, 11:30 PM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/39.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=HQpKPcYzFjU' target='_blank' rel='noopener'>How William Clark Gable Became the King of Hollywood | True Celebrity Story</a></div><div class='meta'><span class='chip'>star_life_stories</span><span class='chip'>short</span></div><div class='row-side'><span class='pill ok'>Scheduled on YouTube</span><span class='muted'>07 Nov, 07:30 PM</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=HQpKPcYzFjU' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>06 Nov, 10:44 PM PKT</b></div><div class='tl-step done'><i></i>Public since <b>07 Nov, 07:30 PM PKT</b></div></div><div class='tl'><div class='tl-name'><a href='https://www.facebook.com/reel/1803293277621862' target='_blank' rel='noopener'>Facebook &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>06 Nov, 10:44 PM PKT</b></div><div class='tl-step done'><i></i>Live since <b>07 Nov, 07:30 PM PKT</b></div></div><div class='tl'><div class='tl-name'>TikTok</div><div class='tl-step done'><i></i>Uploaded <b>06 Nov, 10:44 PM PKT</b></div><div class='tl-step done'><i></i>Live since <b>07 Nov, 07:30 PM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/38.jpg' alt=''><div class='row-main'><div class='row-title'>How Inflation Secretly Reduces Your Money&#x27;s Purchasing Power | Dime Horizon</div><div class='meta'><span class='chip'>dime_horizon</span><span class='chip'>long</span></div><div class='reason'>The video was built but could not be uploaded at the time, and its files were only kept for a week.</div><div class='row-side'><span class='pill bad'>Not uploaded · video files expired</span><span class='muted'>06 Nov, 10:35 PM</span></div><div class='tls'><div class='tl'><div class='tl-name'>YouTube</div><div class='tl-step fail'><i></i>Will not upload (files lost)</div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/37.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=fmYEFwoqRaM' target='_blank' rel='noopener'>How James Marshall Hendrix Went From a One-String Ukulele to Rock Legend | True Celebrity Story</a></div><div class='meta'><span class='chip'>star_life_stories</span><span class='chip'>short</span></div><div class='row-side'><span class='pill ok'>Scheduled on YouTube</span><span class='muted'>07 Nov, 03:30 AM</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=fmYEFwoqRaM' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>06 Nov, 10:35 PM PKT</b></div><div class='tl-step done'><i></i>Public since <b>07 Nov, 03:30 AM PKT</b></div></div><div class='tl'><div class='tl-name'><a href='https://www.facebook.com/reel/1394981826041535' target='_blank' rel='noopener'>Facebook &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>06 Nov, 10:35 PM PKT</b></div><div class='tl-step done'><i></i>Live since <b>07 Nov, 03:30 AM PKT</b></div></div><div class='tl'><div class='tl-name'>TikTok</div><div class='tl-step done'><i></i>Uploaded <b>06 Nov, 10:35 PM PKT</b></div><div class='tl-step done'><i></i>Live since <b>07 Nov, 03:30 AM PKT</b></div></div></div></div></li></ul>
+    </section>
+    <section class="card">
+      <h2>Going public next</h2>
+      <ul class='rows'><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/46.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=2DlvZvmNyLU' target='_blank' rel='noopener'>Unveiling the 293 Species of Carnivora Across the Globe | Veylora Earth</a></div><div class='meta'><span class='chip'>veylora_earth</span><span class='chip'>short</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=2DlvZvmNyLU' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 12:55 AM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>07 Nov, 10:30 PM PKT</b></div></div><div class='tl'><div class='tl-name'><a href='https://www.facebook.com/reel/1429553159334773' target='_blank' rel='noopener'>Facebook &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 12:55 AM PKT</b></div><div class='tl-step wait'><i></i>Goes live <b>07 Nov, 10:30 PM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/48.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=RqUGhES2L4I' target='_blank' rel='noopener'>The Andromeda–Milky Way Collision: Will Our Galaxies Actually Crash? | Quasorynth</a></div><div class='meta'><span class='chip'>quasorynth_space</span><span class='chip'>short</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=RqUGhES2L4I' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 02:38 AM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>07 Nov, 11:00 PM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: {&quot;error&quot;:{&quot;message&quot;:&quot;Any of the pages_read_engagement, pages_manage_metadata,\n  <b>07 Nov, 02:39 AM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/40.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=vSese7PnG_U' target='_blank' rel='noopener'>The Life, Career, and Controversial Death of American Actor George Reeves | True Celebrity Story</a></div><div class='meta'><span class='chip'>star_life_stories</span><span class='chip'>short</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=vSese7PnG_U' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>06 Nov, 11:04 PM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>07 Nov, 11:30 PM PKT</b></div></div><div class='tl'><div class='tl-name'><a href='https://www.facebook.com/reel/1554736810035441' target='_blank' rel='noopener'>Facebook &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>06 Nov, 11:04 PM PKT</b></div><div class='tl-step wait'><i></i>Goes live <b>07 Nov, 11:30 PM PKT</b></div></div><div class='tl'><div class='tl-name'>TikTok</div><div class='tl-step done'><i></i>Uploaded <b>06 Nov, 11:04 PM PKT</b></div><div class='tl-step wait'><i></i>Goes live <b>07 Nov, 11:30 PM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/54.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=5Xs7vwCT1H8' target='_blank' rel='noopener'>How Deepsea lizardfish Survive the Deep Ocean Floor | Abyssoryn</a></div><div class='meta'><span class='chip'>abyssoryn_earth_mysterie</span><span class='chip'>short</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=5Xs7vwCT1H8' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 09:25 PM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>08 Nov, 12:30 AM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata,
+        pages_read <b>07 Nov, 09:25 PM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/49.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=zFUFqb0ORmo' target='_blank' rel='noopener'>Where Is Everybody In The Fermi Paradox? | Quasorynth</a></div><div class='meta'><span class='chip'>quasorynth_space</span><span class='chip'>short</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=zFUFqb0ORmo' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 02:52 AM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>08 Nov, 03:00 AM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata,
+        pages_read <b>07 Nov, 02:53 AM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/56.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=WYPGOy5t-cs' target='_blank' rel='noopener'>Dwayne Douglas Johnson and His Journey to Global Prominence | True Celebrity Story</a></div><div class='meta'><span class='chip'>star_life_stories</span><span class='chip'>short</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=WYPGOy5t-cs' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 09:53 PM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>08 Nov, 03:30 AM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata,
+        pages_read <b>07 Nov, 09:53 PM PKT</b></div></div><div class='tl'><div class='tl-name'>TikTok</div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 09:53 PM PKT</b></div><div class='tl-step wait'><i></i>Goes live <b>08 Nov, 03:30 AM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/55.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=V0G7JOnjMvU' target='_blank' rel='noopener'>Unveiling Ctenophora: The Largest Animals to Swim With Cilia | Abyssoryn</a></div><div class='meta'><span class='chip'>abyssoryn_earth_mysterie</span><span class='chip'>short</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=V0G7JOnjMvU' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 09:38 PM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>08 Nov, 04:30 AM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata,
+        pages_read <b>07 Nov, 09:38 PM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/50.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=fSYRfdOC1Ro' target='_blank' rel='noopener'>What Lies Beneath the Distinct Pigmentation of Orcinus orca? | Abyssoryn</a></div><div class='meta'><span class='chip'>abyssoryn_earth_mysterie</span><span class='chip'>long</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=fSYRfdOC1Ro' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 08:25 PM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>08 Nov, 07:30 AM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: {&quot;error&quot;:{&quot;message&quot;:&quot;Any of the pages_read_engagement, pages_manage_metadata,\n  <b>07 Nov, 08:25 PM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/57.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=23rHmANTxi4' target='_blank' rel='noopener'>Harry Styles: The Record-Breaking Solo Sales Phenomenon | True Celebrity Story</a></div><div class='meta'><span class='chip'>star_life_stories</span><span class='chip'>short</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=23rHmANTxi4' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 10:03 PM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>08 Nov, 07:30 PM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata,
+        pages_read <b>07 Nov, 10:03 PM PKT</b></div></div><div class='tl'><div class='tl-name'>TikTok</div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 10:03 PM PKT</b></div><div class='tl-step wait'><i></i>Goes live <b>08 Nov, 07:30 PM PKT</b></div></div></div></div></li><li class='row with-thumb'><img class='rthumb' loading='lazy' src='thumbs/58.jpg' alt=''><div class='row-main'><div class='row-title'><a href='https://www.youtube.com/watch?v=WBs3MbD-E-Y' target='_blank' rel='noopener'>How Billie Eilish and Finneas Created Ocean Eyes | True Celebrity Story</a></div><div class='meta'><span class='chip'>star_life_stories</span><span class='chip'>short</span></div><div class='tls'><div class='tl'><div class='tl-name'><a href='https://www.youtube.com/watch?v=WBs3MbD-E-Y' target='_blank' rel='noopener'>YouTube &#8599;</a></div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 10:17 PM PKT</b></div><div class='tl-step wait'><i></i>Goes public <b>08 Nov, 11:30 PM PKT</b></div></div><div class='tl'><div class='tl-name'>Facebook</div><div class='tl-step fail'><i></i>Failed: HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata,
+        pages_read <b>07 Nov, 10:17 PM PKT</b></div></div><div class='tl'><div class='tl-name'>TikTok</div><div class='tl-step done'><i></i>Uploaded <b>07 Nov, 10:17 PM PKT</b></div><div class='tl-step wait'><i></i>Goes live <b>08 Nov, 11:30 PM PKT</b></div></div></div></div></li></ul>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card">
+      <h2>On Facebook <small>videos and posts, newest first</small></h2>
+      <ul class='rows'><li class='row'><div class='row-main'><div class='row-title'>How Billie Eilish and Finneas Created Ocean Eyes | True Celebrity Story</div><div class='meta'><span class='chip'>Star Life Stories</span><span class='chip'>Reel</span></div><div class='reason'>HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata, pages_read_user_content, pages_manage_ads, pages_show_list or pages_messaging permission(s) must be granted before impersonating</div></div><div class='row-side'><span class='pill bad'>Not posted to Facebook</span><span class='muted'>07 Nov, 10:17 PM</span></div></li><li class='row'><div class='row-main'><div class='row-title'>Harry Styles: The Record-Breaking Solo Sales Phenomenon | True Celebrity Story</div><div class='meta'><span class='chip'>Star Life Stories</span><span class='chip'>Reel</span></div><div class='reason'>HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata, pages_read_user_content, pages_manage_ads, pages_show_list or pages_messaging permission(s) must be granted before impersonating</div></div><div class='row-side'><span class='pill bad'>Not posted to Facebook</span><span class='muted'>07 Nov, 10:03 PM</span></div></li><li class='row'><div class='row-main'><div class='row-title'>Dwayne Douglas Johnson and His Journey to Global Prominence | True Celebrity Story</div><div class='meta'><span class='chip'>Star Life Stories</span><span class='chip'>Reel</span></div><div class='reason'>HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata, pages_read_user_content, pages_manage_ads, pages_show_list or pages_messaging permission(s) must be granted before impersonating</div></div><div class='row-side'><span class='pill bad'>Not posted to Facebook</span><span class='muted'>07 Nov, 09:53 PM</span></div></li><li class='row'><div class='row-main'><div class='row-title'>Unveiling Ctenophora: The Largest Animals to Swim With Cilia | Abyssoryn</div><div class='meta'><span class='chip'>Abyssoryn</span><span class='chip'>Reel</span></div><div class='reason'>HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata, pages_read_user_content, pages_manage_ads, pages_show_list or pages_messaging permission(s) must be granted before impersonating</div></div><div class='row-side'><span class='pill bad'>Not posted to Facebook</span><span class='muted'>07 Nov, 09:38 PM</span></div></li><li class='row'><div class='row-main'><div class='row-title'>How Deepsea lizardfish Survive the Deep Ocean Floor | Abyssoryn</div><div class='meta'><span class='chip'>Abyssoryn</span><span class='chip'>Reel</span></div><div class='reason'>HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata, pages_read_user_content, pages_manage_ads, pages_show_list or pages_messaging permission(s) must be granted before impersonating</div></div><div class='row-side'><span class='pill bad'>Not posted to Facebook</span><span class='muted'>07 Nov, 09:25 PM</span></div></li><li class='row'><div class='row-main'><div class='row-title'>What Lies Beneath the Distinct Pigmentation of Orcinus orca? | Abyssoryn</div><div class='meta'><span class='chip'>Abyssoryn</span><span class='chip'>Video</span></div><div class='reason'>HTTP 400: {&quot;error&quot;:{&quot;message&quot;:&quot;Any of the pages_read_engagement, pages_manage_metadata,\n pages_read_user_content, pages_manage_ads, pages_show_list or\n pages_messaging permission(s) must be granted </div></div><div class='row-side'><span class='pill bad'>Not posted to Facebook</span><span class='muted'>07 Nov, 08:25 PM</span></div></li><li class='row'><div class='row-main'><div class='row-title'>Where Is Everybody In The Fermi Paradox? | Quasorynth</div><div class='meta'><span class='chip'>Quasorynth</span><span class='chip'>Reel</span></div><div class='reason'>HTTP 400: 190: Any of the pages_read_engagement, pages_manage_metadata, pages_read_user_content, pages_manage_ads, pages_show_list or pages_messaging permission(s) must be granted before impersonating</div></div><div class='row-side'><span class='pill bad'>Not posted to Facebook</span><span class='muted'>07 Nov, 02:53 AM</span></div></li><li class='row'><div class='row-main'><div class='row-title'>The Andromeda–Milky Way Collision: Will Our Galaxies Actually Crash? | Quasorynth</div><div class='meta'><span class='chip'>Quasorynth</span><span class='chip'>Reel</span></div><div class='reason'>HTTP 400: {&quot;error&quot;:{&quot;message&quot;:&quot;Any of the pages_read_engagement, pages_manage_metadata,\n pages_read_user_content, pages_manage_ads, pages_show_list or\n pages_messaging permission(s) must be granted </div></div><div class='row-side'><span class='pill bad'>Not posted to Facebook</span><span class='muted'>07 Nov, 02:39 AM</span></div></li><li class='row'><div class='row-main'><div class='row-title'>How TON 618 Became One of the Brightest Objects in the Universe | Quasorynth</div><div class='meta'><span class='chip'>Quasorynth</span><span class='chip'>Reel</span></div><div class='reason'>HTTP 400: {&quot;error&quot;:{&quot;message&quot;:&quot;Any of the pages_read_engagement, pages_manage_metadata,\n pages_read_user_content, pages_manage_ads, pages_show_list or\n pages_messaging permission(s) must be granted </div></div><div class='row-side'><span class='pill bad'>Not posted to Facebook</span><span class='muted'>07 Nov, 02:27 AM</span></div></li><li class='row'><div class='row-main'><div class='row-title'><a href='https://www.facebook.com/reel/1429553159334773' target='_blank' rel='noopener'>Unveiling the 293 Species of Carnivora Across the Globe | Veylora Earth</a></div><div class='meta'><span class='chip'>Veylora Earth</span><span class='chip'>Reel</span></div><a class='url' href='https://www.facebook.com/reel/1429553159334773' target='_blank' rel='noopener'>facebook.com/reel/1429553159334773</a></div><div class='row-side'><span class='pill ok'>Live on Facebook</span><span class='muted'>07 Nov, 12:55 AM</span></div></li><li class='row'><div class='row-main'><div class='row-title'><a href='https://www.facebook.com/2244233232822069' target='_blank' rel='noopener'>Otodus megalodon lived approximately 23 to 3.58 million years ago | Veylora Earth</a></div><div class='meta'><span class='chip'>Veylora Earth</span><span class='chip'>Reel</span></div><a class='url' href='https://www.facebook.com/2244233232822069' target='_blank' rel='noopener'>facebook.com/2244233232822069</a></div><div class='row-side'><span class='pill ok'>Live on Facebook</span><span class='muted'>07 Nov, 12:43 AM</span></div></li><li class='row'><div class='row-main'><div class='row-title'><a href='https://www.facebook.com/reel/1619935362404016' target='_blank' rel='noopener'>How Did Machairodontinae Evolve Their Iconic Saber Teeth? | Veylora Earth</a></div><div class='meta'><span class='chip'>Veylora Earth</span><span class='chip'>Reel</span></div><a class='url' href='https://www.facebook.com/reel/1619935362404016' target='_blank' rel='noopener'>facebook.com/reel/1619935362404016</a></div><div class='row-side'><span class='pill ok'>Live on Facebook</span><span class='muted'>07 Nov, 12:29 AM</span></div></li><li class='row'><div class='row-main'><div class='row-title'><a href='https://www.facebook.com/122099053731542347' target='_blank' rel='noopener'>Leonardo DiCaprio</a></div><div class='meta'><span class='chip'>Star Life Stories</span><span class='chip'>Picture post</span></div><a class='url' href='https://www.facebook.com/122099053731542347' target='_blank' rel='noopener'>facebook.com/122099053731542347</a></div><div class='row-side'><span class='pill ok'>Live on Facebook</span><span class='muted'>07 Nov, 12:10 AM</span></div></li><li class='row'><div class='row-main'><div class='row-title'><a href='https://www.facebook.com/reel/1554736810035441' target='_blank' rel='noopener'>The Life, Career, and Controversial Death of American Actor George Reeves | True Celebrity Story</a></div><div class='meta'><span class='chip'>Star Life Stories</span><span class='chip'>Reel</span></div><a class='url' href='https://www.facebook.com/reel/1554736810035441' target='_blank' rel='noopener'>facebook.com/reel/1554736810035441</a></div><div class='row-side'><span class='pill ok'>Live on Facebook</span><span class='muted'>06 Nov, 11:04 PM</span></div></li><li class='row'><div class='row-main'><div class='row-title'><a href='https://www.facebook.com/reel/1803293277621862' target='_blank' rel='noopener'>How William Clark Gable Became the King of Hollywood | True Celebrity Story</a></div><div class='meta'><span class='chip'>Star Life Stories</span><span class='chip'>Reel</span></div><a class='url' href='https://www.facebook.com/reel/1803293277621862' target='_blank' rel='noopener'>facebook.com/reel/1803293277621862</a></div><div class='row-side'><span class='pill ok'>Live on Facebook</span><span class='muted'>06 Nov, 10:44 PM</span></div></li><li class='row'><div class='row-main'><div class='row-title'><a href='https://www.facebook.com/reel/1394981826041535' target='_blank' rel='noopener'>How James Marshall Hendrix Went From a One-String Ukulele to Rock Legend | True Celebrity Story</a></div><div class='meta'><span class='chip'>Star Life Stories</span><span class='chip'>Reel</span></div><a class='url' href='https://www.facebook.com/reel/1394981826041535' target='_blank' rel='noopener'>facebook.com/reel/1394981826041535</a></div><div class='row-side'><span class='pill ok'>Live on Facebook</span><span class='muted'>06 Nov, 10:35 PM</span></div></li><li class='row'><div class='row-main'><div class='row-title'><a href='https://www.facebook.com/reel/2307933010063449' target='_blank' rel='noopener'>The Mariana Trench Reaches 10,935 Meters Down | Abyssoryn</a></div><div class='meta'><span class='chip'>Abyssoryn</span><span class='chip'>Reel</span></div><a class='url' href='https://www.facebook.com/reel/2307933010063449' target='_blank' rel='noopener'>facebook.com/reel/2307933010063449</a></div><div class='row-side'><span class='pill ok'>Live on Facebook</span><span class='muted'>06 Nov, 07:54 PM</span></div></li><li class='row'><div class='row-main'><div class='row-title'><a href='https://www.facebook.com/reel/1094349496756630' target='_blank' rel='noopener'>Descending into the Mariana Trench and the Unknown Depths of the Deep Sea | Abyssoryn</a></div><div class='meta'><span class='chip'>Abyssoryn</span><span class='chip'>Reel</span></div><a class='url' href='https://www.facebook.com/reel/1094349496756630' target='_blank' rel='noopener'>facebook.com/reel/1094349496756630</a></div><div class='row-side'><span class='pill ok'>Live on Facebook</span><span class='muted'>06 Nov, 07:42 PM</span></div></li><li class='row'><div class='row-main'><div class='row-title'><a href='https://www.facebook.com/reel/1796971518232618' target='_blank' rel='noopener'>Titan is Larger Than Mercury and Possesses a Dense Atmosphere | Quasorynth</a></div><div class='meta'><span class='chip'>Quasorynth</span><span class='chip'>Reel</span></div><a class='url' href='https://www.facebook.com/reel/1796971518232618' target='_blank' rel='noopener'>facebook.com/reel/1796971518232618</a></div><div class='row-side'><span class='pill ok'>Live on Facebook</span><span class='muted'>06 Nov, 02:59 AM</span></div></li><li class='row'><div class='row-main'><div class='row-title'><a href='https://www.facebook.com/reel/1872040693966873' target='_blank' rel='noopener'>Mars Explained | Quasorynth</a></div><div class='meta'><span class='chip'>Quasorynth</span><span class='chip'>Reel</span></div><a class='url' href='https://www.facebook.com/reel/1872040693966873' target='_blank' rel='noopener'>facebook.com/reel/1872040693966873</a></div><div class='row-side'><span class='pill ok'>Live on Facebook</span><span class='muted'>06 Nov, 02:47 AM</span></div></li></ul>
+    </section>
+    <section class="card">
+      <h2>Uploads <small>last 7 days</small></h2>
+      <div class='tbl'><table class='week'><thead><tr><th>Day</th><th>Star Life Stories</th><th>Quasorynth</th><th>Veylora Earth</th><th>DimeHorizon</th><th>Abyssoryn</th><th>Total</th></tr></thead><tbody><tr><th scope='row'>Sun 01 Nov</th><td><span class='heat' style='--a:0.00'>·</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td class='total'>0</td></tr><tr><th scope='row'>Mon 02 Nov</th><td><span class='heat' style='--a:0.75'>3</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td class='total'>3</td></tr><tr><th scope='row'>Tue 03 Nov</th><td><span class='heat' style='--a:0.25'>1</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td><span class='heat' style='--a:0.75'>3</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td class='total'>4</td></tr><tr><th scope='row'>Wed 04 Nov</th><td><span class='heat' style='--a:0.50'>2</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td><span class='heat' style='--a:0.50'>2</span></td><td><span class='heat' style='--a:0.50'>2</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td class='total'>6</td></tr><tr><th scope='row'>Thu 05 Nov</th><td><span class='heat' style='--a:1.00'>4</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td><span class='heat' style='--a:0.25'>1</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td><span class='heat' style='--a:0.50'>2</span></td><td class='total'>7</td></tr><tr><th scope='row'>Fri 06 Nov</th><td><span class='heat' style='--a:1.00'>4</span></td><td><span class='heat' style='--a:0.75'>3</span></td><td><span class='heat' style='--a:0.75'>3</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td><span class='heat' style='--a:0.75'>3</span></td><td class='total'>13</td></tr><tr><th scope='row'>Sat 07 Nov</th><td><span class='heat' style='--a:0.75'>3</span></td><td><span class='heat' style='--a:0.75'>3</span></td><td><span class='heat' style='--a:0.75'>3</span></td><td><span class='heat' style='--a:0.00'>·</span></td><td><span class='heat' style='--a:0.75'>3</span></td><td class='total'>12</td></tr></tbody></table></div>
+    </section>
+    <section class="card">
+      <h2>Latest videos</h2>
+      <div class='vids'>
+    <a class="vid" href="https://www.youtube.com/watch?v=WBs3MbD-E-Y" target="_blank" rel="noopener">
+      <img loading="lazy" src="https://i.ytimg.com/vi/WBs3MbD-E-Y/mqdefault.jpg" alt="">
+      <div class="vid-body">
+        <div class="vid-title">How Billie Eilish and Finneas Created Ocean Eyes | True Celebrity Story</div>
+        <div class="meta"><span class='chip'>star_life_stories</span><span class='chip'>short</span><span class="muted">Goes public 08 Nov, 11:30 PM</span></div>
+      </div>
+    </a>
+    <a class="vid" href="https://www.youtube.com/watch?v=23rHmANTxi4" target="_blank" rel="noopener">
+      <img loading="lazy" src="https://i.ytimg.com/vi/23rHmANTxi4/mqdefault.jpg" alt="">
+      <div class="vid-body">
+        <div class="vid-title">Harry Styles: The Record-Breaking Solo Sales Phenomenon | True Celebrity Story</div>
+        <div class="meta"><span class='chip'>star_life_stories</span><span class='chip'>short</span><span class="muted">Goes public 08 Nov, 07:30 PM</span></div>
+      </div>
+    </a>
+    <a class="vid" href="https://www.youtube.com/watch?v=WYPGOy5t-cs" target="_blank" rel="noopener">
+      <img loading="lazy" src="https://i.ytimg.com/vi/WYPGOy5t-cs/mqdefault.jpg" alt="">
+      <div class="vid-body">
+        <div class="vid-title">Dwayne Douglas Johnson and His Journey to Global Prominence | True Celebrity Story</div>
+        <div class="meta"><span class='chip'>star_life_stories</span><span class='chip'>short</span><span class="muted">Goes public 08 Nov, 03:30 AM</span></div>
+      </div>
+    </a>
+    <a class="vid" href="https://www.youtube.com/watch?v=V0G7JOnjMvU" target="_blank" rel="noopener">
+      <img loading="lazy" src="https://i.ytimg.com/vi/V0G7JOnjMvU/mqdefault.jpg" alt="">
+      <div class="vid-body">
+        <div class="vid-title">Unveiling Ctenophora: The Largest Animals to Swim With Cilia | Abyssoryn</div>
+        <div class="meta"><span class='chip'>abyssoryn_earth_mysterie</span><span class='chip'>short</span><span class="muted">Goes public 08 Nov, 04:30 AM</span></div>
+      </div>
+    </a>
+    <a class="vid" href="https://www.youtube.com/watch?v=5Xs7vwCT1H8" target="_blank" rel="noopener">
+      <img loading="lazy" src="https://i.ytimg.com/vi/5Xs7vwCT1H8/mqdefault.jpg" alt="">
+      <div class="vid-body">
+        <div class="vid-title">How Deepsea lizardfish Survive the Deep Ocean Floor | Abyssoryn</div>
+        <div class="meta"><span class='chip'>abyssoryn_earth_mysterie</span><span class='chip'>short</span><span class="muted">Goes public 08 Nov, 12:30 AM</span></div>
+      </div>
+    </a>
+    <a class="vid" href="https://www.youtube.com/watch?v=fSYRfdOC1Ro" target="_blank" rel="noopener">
+      <img loading="lazy" src="https://i.ytimg.com/vi/fSYRfdOC1Ro/mqdefault.jpg" alt="">
+      <div class="vid-body">
+        <div class="vid-title">What Lies Beneath the Distinct Pigmentation of Orcinus orca? | Abyssoryn</div>
+        <div class="meta"><span class='chip'>abyssoryn_earth_mysterie</span><span class='chip'>long</span><span class="muted">Goes public 08 Nov, 07:30 AM</span></div>
+      </div>
+    </a>
+    <a class="vid" href="https://www.youtube.com/watch?v=zFUFqb0ORmo" target="_blank" rel="noopener">
+      <img loading="lazy" src="https://i.ytimg.com/vi/zFUFqb0ORmo/mqdefault.jpg" alt="">
+      <div class="vid-body">
+        <div class="vid-title">Where Is Everybody In The Fermi Paradox? | Quasorynth</div>
+        <div class="meta"><span class='chip'>quasorynth_space</span><span class='chip'>short</span><span class="muted">Goes public 08 Nov, 03:00 AM</span></div>
+      </div>
+    </a>
+    <a class="vid" href="https://www.youtube.com/watch?v=RqUGhES2L4I" target="_blank" rel="noopener">
+      <img loading="lazy" src="https://i.ytimg.com/vi/RqUGhES2L4I/mqdefault.jpg" alt="">
+      <div class="vid-body">
+        <div class="vid-title">The Andromeda–Milky Way Collision: Will Our Galaxies Actually Crash? | Quasorynth</div>
+        <div class="meta"><span class='chip'>quasorynth_space</span><span class='chip'>short</span><span class="muted">Goes public 07 Nov, 11:00 PM</span></div>
+      </div>
+    </a>
+    <a class="vid" href="https://www.youtube.com/watch?v=lYlPbC24TxM" target="_blank" rel="noopener">
+      <img loading="lazy" src="https://i.ytimg.com/vi/lYlPbC24TxM/mqdefault.jpg" alt="">
+      <div class="vid-body">
+        <div class="vid-title">How TON 618 Became One of the Brightest Objects in the Universe | Quasorynth</div>
+        <div class="meta"><span class='chip'>quasorynth_space</span><span class='chip'>short</span><span class="muted">Goes public 07 Nov, 07:00 AM</span></div>
+      </div>
+    </a>
+    <a class="vid" href="https://www.youtube.com/watch?v=2DlvZvmNyLU" target="_blank" rel="noopener">
+      <img loading="lazy" src="https://i.ytimg.com/vi/2DlvZvmNyLU/mqdefault.jpg" alt="">
+      <div class="vid-body">
+        <div class="vid-title">Unveiling the 293 Species of Carnivora Across the Globe | Veylora Earth</div>
+        <div class="meta"><span class='chip'>veylora_earth</span><span class='chip'>short</span><span class="muted">Goes public 07 Nov, 10:30 PM</span></div>
+      </div>
+    </a>
+    <a class="vid" href="https://www.youtube.com/watch?v=2OAgsgNXCcw" target="_blank" rel="noopener">
+      <img loading="lazy" src="https://i.ytimg.com/vi/2OAgsgNXCcw/mqdefault.jpg" alt="">
+      <div class="vid-body">
+        <div class="vid-title">Otodus megalodon lived approximately 23 to 3.58 million years ago | Veylora Earth</div>
+        <div class="meta"><span class='chip'>veylora_earth</span><span class='chip'>short</span><span class="muted">Goes public 07 Nov, 06:30 AM</span></div>
+      </div>
+    </a>
+    <a class="vid" href="https://www.youtube.com/watch?v=_ucCVFu8QXU" target="_blank" rel="noopener">
+      <img loading="lazy" src="https://i.ytimg.com/vi/_ucCVFu8QXU/mqdefault.jpg" alt="">
+      <div class="vid-body">
+        <div class="vid-title">How Did Machairodontinae Evolve Their Iconic Saber Teeth? | Veylora Earth</div>
+        <div class="meta"><span class='chip'>veylora_earth</span><span class='chip'>short</span><span class="muted">Goes public 07 Nov, 02:30 AM</span></div>
+      </div>
+    </a></div>
+    </section>
+  </div>
+</main>
+
+<footer class="wrap">
+  Built automatically by the daily GitHub Actions run. This page only reports —
+  to build or upload something, use <b>Actions → Daily videos → Run workflow</b>.<br>
+  <a href="privacy.html">Privacy policy</a> · <a href="terms.html">Terms of service</a>
+</footer>
+</body></html>
